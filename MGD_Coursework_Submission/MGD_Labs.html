@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>MGD Labs</title>
+</head>
+
+<body>
+	<canvas id="canvasForTheGame"></canvas>
+	</div>
+	<script>
+		var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+		window.requestAnimationFrame = requestAnimationFrame;
+
+		//Canvas Variables
+		var canvas = document.getElementById("canvasForTheGame");
+		var width = 500;
+		var height = 200;
+		var ctx = canvas.getContext("2d");
+
+		//Player Variables
+		var player = {
+			x: 0,
+			y: 50,
+			width: 25,
+			height: 25,
+			velX: 0,
+			velY: 0,
+			jumping: false
+		};
+		var keys = [];
+		var friction = 0.8;
+
+		//Sprite sheet Variables
+		var startTimeMS = 0;
+		var frameX = 0;
+		var frameXMax = 6;
+		var frameY = 0;
+		var frameYMax = 3;
+		var frame = 0;
+		var frameMax = 26;
+		var frameTimer = 0.05;
+		var frameTimeMax = 0.017;
+		var spriteWidth = 74;
+		var spriteHeight = 86;
+		var isKeyPressed = false;
+
+		//Array Variables
+		var boxes = [];
+		var appleArray = [];
+		var badAppleArray = [];
+		var platformArray = [];
+
+		//Image Variables
+		var imgPlayer = new Image();
+		var imgBackground = new Image();
+		var imgCrate = new Image();
+		var imgApple = new Image();
+		var imgBadApple = new Image();
+		var imgPlatform = new Image();
+		var imgMainMenuOverlay = new Image();
+		var imgMainScreenOverlay = new Image();
+		var imgLoseScreenOverlay = new Image();
+		var imgWinScreenOverlay = new Image();
+
+		//Audio Variables
+		var collectSound = new sound("Collect.wav");
+		var damageSound = new sound("Damage.wav");
+		var jumpSound = new sound("Jump.wav");
+		var bgMusic = new sound("Background.wav");
+
+		//UI Variables
+		var score = 0;
+		var health = 3;
+		var energy = 50;
+
+		//High Score Variables
+		var localStorageName = "bobbingGameHighScore_0";
+		var bestTime;
+		var startTime, endTime;
+
+		//Scene Management Variables
+		var startScreen = true;
+		var gameOver = false;
+		var endScreen = false;
+		var inputAllowed = true;
+
+		window.addEventListener("load", function() {
+			//On load we check the best time and then run the start and update function
+			checkBestTime();
+			start();
+			update();
+		});
+
+		//This function is used for checking if the local storage has a previously saved best time
+		function checkBestTime() {
+			if (localStorage.getItem(localStorageName) == null) {
+				bestTime = 3600000; //If there is no previously stored best time then the best time is set to 1 hour
+			} else {
+				bestTime = localStorage.getItem(localStorageName); //if there is a previously stored best time then this is accessed
+			}
+		}
+
+		//checks if a key has been pressed
+		document.body.addEventListener("keydown", function(e) {
+			keys[e.keyCode] = true;
+			isKeyPressed = true;
+		});
+
+		//checks if a key has been released
+		document.body.addEventListener("keyup", function(e) {
+			keys[e.keyCode] = false;
+			isKeyPressed = false;
+		});
+
+		function start() {
+			canvas.width = width;
+			canvas.height = height;
+
+			//loads the image assets
+			imgPlayer.src = 'braidSpritesheet.png';
+			imgApple.src = 'apple_green.png';
+			imgBadApple.src = 'apple_red.png';
+			imgBackground.src = 'background.png';
+			imgPlatform.src = 'Platform2.png';
+			imgMainMenuOverlay.src = "GameScreen.png";
+			imgMainScreenOverlay.src = "MainScreenOverlay.png";
+			imgLoseScreenOverlay.src = "LoseScreen.png";
+			imgWinScreenOverlay.src = "WinScreen.png";
+
+			//creates the array variables for the box items which represent the bounding area of our game
+			boxes.push({
+				x: 0,
+				y: -470,
+				width: 500,
+				height: 500
+			});
+			boxes.push({
+				x: 500,
+				y: 0,
+				width: 500,
+				height: 500
+			});
+			boxes.push({
+				x: -500,
+				y: 0,
+				width: 500,
+				height: 500
+			});
+
+			//creates the array elements for our green apples
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			appleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+
+			//creates the array elements for our red apples
+			badAppleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			badAppleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+			badAppleArray.push({
+				x: Math.floor(Math.random() * 500),
+				y: Math.floor(Math.random() * 150) + 30,
+				width: 8,
+				height: 8,
+
+			});
+
+			//creates the array elements for our platforms
+			platformArray.push({
+				x: 0,
+				y: 100,
+				width: 64,
+				height: 8,
+			})
+			platformArray.push({
+				x: 100,
+				y: Math.min(190, Math.floor(Math.random() * 150) + 60),
+				width: 64,
+				height: 8,
+			})
+			platformArray.push({
+				x: 200,
+				y: Math.min(190, Math.floor(Math.random() * 150) + 60),
+				width: 64,
+				height: 8,
+			})
+			platformArray.push({
+				x: 300,
+				y: Math.min(190, Math.floor(Math.random() * 150) + 60),
+				width: 64,
+				height: 8,
+			})
+			platformArray.push({
+				x: 400,
+				y: Math.min(190, Math.floor(Math.random() * 150) + 60),
+				width: 64,
+				height: 8,
+			})
+
+
+			setInterval(increase, 100);
+
+		}
+
+		//used to increase our energy over time
+		function increase() {
+			if (energy < 100) { //only increases the energy as long as it is below 100
+				energy++;
+			}
+		}
+
+		function update() {
+
+			if (startScreen == true) {
+
+				//draws our start screen
+				ctx.clearRect(0, 0, width, height);
+				ctx.drawImage(imgBackground, 0, 0);
+				ctx.drawImage(imgMainMenuOverlay, 0, 0);
+				requestAnimationFrame(update);
+
+				//if we press the space bar the following actions happen
+				if (keys[32]) {
+					startScreen = false; //change the start screen bool to false so we can load the game scene
+					energy = 50; //sets our energy to 50
+					startTime = new Date(); //sets the start time variable to the current time
+				}
+			} else {
+				//draws the game scene background and UI overlay
+				ctx.drawImage(imgBackground, 0, 0);
+				ctx.drawImage(imgMainScreenOverlay, 0, 0);
+				//plays the background music
+				bgMusic.play();
+				//draws the UI elements
+				drawScore();
+				drawHealth();
+				drawEnergy();
+
+				//if statements to make sure energy never goes below 0 and above 100
+				if (energy <= 0) {
+					energy = 0;
+				}
+				if (energy >= 100) {
+					energy = 100;
+				}
+
+				//movement inputs
+				if (inputAllowed == true) {
+					if (keys[38] || keys[87]) {
+						if (player.jumping == false) {
+							// Up arrow
+							if (player.y > 40)
+								player.velY -= .4 * energy; //multiplies energy by upward velocity so that the players energy alters how high they jump
+							jumpSound.play(); //plays sound effect when player jumps
+							player.jumping = true;
+							energy = energy / 2; //lowers energy after each jump
+
+						}
+					}
+					//movement left and right
+					if (keys[39] || keys[68]) {
+						// right arrow
+						if (player.x < (canvas.width - player.width - 20))
+							player.velX++;
+					}
+					if (keys[37] || keys[65]) {
+						// left arrow
+						if (player.x > player.width)
+							player.velX--;
+
+					}
+				}
+				player.velY += 1.5;
+				player.velX *= friction;
+				player.velY *= friction;
+				player.x += player.velX;
+				player.y += player.velY;
+
+
+
+				if (isKeyPressed) {
+					animationFrame();
+					ctx.drawImage(imgPlayer, spriteWidth * frameX, spriteHeight * frameY, spriteWidth, spriteHeight, player.x, player.y, player.width, player.height);
+				} else
+					ctx.drawImage(imgPlayer, spriteWidth * 2, spriteHeight * 1, spriteWidth, spriteHeight, player.x, player.y, player.width, player.height);
+
+
+				for (var i = 0; i < boxes.length; i++) {
+					// show the boxes on canvas
+					ctx.rect(boxes[i].x, boxes[i].y, boxes[i].width, boxes[i].height);
+					ctx.drawImage(imgCrate, boxes[i].x, boxes[i].y, boxes[i].width, boxes[i].height);
+
+					// check if collide with players
+					var dir = colCheck(player, boxes[i]);
+
+					//checks if player collided with the left or right
+					if (dir === "l" || dir === "r") {
+						player.velX = 0;
+						player.jumping = false;
+					} else if (dir === "t" || dir === "b") { //checks if player collided with the top or bottom
+						player.velY = 0;
+						player.jumping = false;
+					}
+				}
+
+				for (var i = 0; i < platformArray.length; i++) {
+					// show the platforms on canvas
+					ctx.rect(platformArray[i].x, platformArray[i].y, platformArray[i].width, platformArray[i].height);
+					ctx.drawImage(imgPlatform, platformArray[i].x, platformArray[i].y, platformArray[i].width, platformArray[i].height);
+
+					// check if collide with players
+					var dir = colCheck(player, platformArray[i]);
+
+					if (dir === "l" || dir === "r") {
+						player.velX = 0;
+						player.jumping = false;
+					} else if (dir === "t" || dir === "b") {
+						player.velY = 0;
+						player.jumping = false;
+					}
+				}
+
+				for (var i = 0; i < appleArray.length; i++) {
+					// show the green apples on canvas
+					ctx.rect(appleArray[i].x, appleArray[i].y, appleArray[i].width, appleArray[i].height);
+					ctx.drawImage(imgApple, appleArray[i].x, appleArray[i].y, appleArray[i].width, appleArray[i].height);
+
+					appleArray[i].y = appleArray[i].y + 0.4; //moves the apple down the screen
+
+					//returns the apple to the top if it makes it to the bottom
+					if (appleArray[i].y >= 200) {
+						appleArray[i].y = 30;
+						appleArray[i].x = Math.floor(Math.random() * 500);
+					}
+
+					// check if collide with players
+					var dir = colCheck(player, appleArray[i]);
+
+					if (dir === "l" || dir === "r") {
+						player.velX = 0;
+						appleArray.splice(i, 1); //removes the apple that has been collected
+						score++; //increases the score by 1
+						collectSound.play(); //plays the collect sound
+						player.jumping = false;
+					} else if (dir === "t" || dir === "b") {
+						player.velY = 0;
+						appleArray.splice(i, 1);
+						score++;
+						collectSound.play();
+						player.jumping = false;
+					}
+				}
+
+				for (var i = 0; i < badAppleArray.length; i++) {
+					// show the red apples on canvas
+					ctx.rect(badAppleArray[i].x, badAppleArray[i].y, badAppleArray[i].width, badAppleArray[i].height);
+					ctx.drawImage(imgBadApple, badAppleArray[i].x, badAppleArray[i].y, badAppleArray[i].width, badAppleArray[i].height);
+
+					badAppleArray[i].y = badAppleArray[i].y + 0.4; //moves the apple down the screen
+
+					//returns the apple to the top if it makes it to the bottom
+					if (badAppleArray[i].y >= 200) {
+						badAppleArray[i].y = 30;
+						badAppleArray[i].x = Math.floor(Math.random() * 500);
+					}
+
+					// check if collide with players
+					var dir = colCheck(player, badAppleArray[i]);
+
+					if (dir === "l" || dir === "r") {
+						player.velX = 0;
+						badAppleArray.splice(i, 1);
+						health--; //lowers the health by 1
+						damageSound.play(); //plays the damage sound on collection
+						player.jumping = false;
+					} else if (dir === "t" || dir === "b") {
+						player.velY = 0;
+						badAppleArray.splice(i, 1);
+						health--;
+						damageSound.play();
+						player.jumping = false;
+					}
+				}
+
+				//if the score equals 10 the player wins
+				if (score == 10) {
+					gameOver = true;
+				}
+
+				//if health equals 0 the player loses
+				if (health == 0) {
+					gameOver = true;
+				}
+
+				//sets players health to 0 and ends the game if they fall to the bottom of the screen
+				if (player.y >= 200) {
+					health = 0;
+					gameOver = true;
+				}
+
+				//when the game over bool is true the end screen actions are performed
+				if (gameOver == true) {
+					if (endScreen == false && score == 10) {
+						endTime = new Date(); //sets the end time variable which is equal to the time at which endscreen is false but score is equal to 10
+					}
+					if (health == 0) {
+						//loads the images for the end screen
+						ctx.drawImage(imgBackground, 0, 0);
+						ctx.drawImage(imgLoseScreenOverlay, 0, 0);
+					}
+
+					if (score == 10) {
+						//loads the images for the win screen
+						ctx.drawImage(imgBackground, 0, 0);
+						ctx.drawImage(imgWinScreenOverlay, 0, 0);
+
+						endScreen = true;
+						inputAllowed = false;
+
+
+						var timeDiff = endTime - startTime; //time difference between when we start and finish the game
+						bestTime = Math.min(timeDiff, bestTime); //the best time becomes either the
+																										//previously stored best time or the time
+																										//difference depening on which is lower
+						localStorage.setItem(localStorageName, bestTime); //sets the best time in local storage to the possibly new best time
+						ctx.font = "32px Arial"; //sets the font type
+						ctx.fillStyle = "#ffffff"; //sets the font colour
+						ctx.fillText(timeDiff + " ms", 255, 130); //draws the time difference which represents the players score for that game
+						ctx.fillText(bestTime + " ms", 255, 175); //draws the best time the player has achieved
+					}
+				}
+
+				requestAnimationFrame(update); //used to animate the scene
+
+				restartGame(); //runs the restart game function to allow the player to restart
+			}
+		}
+
+
+
+		function restartGame() {
+			{
+				if (keys[82]) //if the player presses r the game reloads
+					location.reload();
+			}
+		}
+
+		function animationFrame() {
+			var elapsed = (Date.now() - startTimeMS) / 1000;
+			startTimeMS = Date.now();
+
+			//only update frames when time is below 0
+
+			frameTime = frameTimer - elapsed;
+			if (frameTimer <= 0) {
+				frameTime = frameTimeMax;
+				frameX++;
+				if (frameX > frameXMax) {
+					frameX = 0;
+					frameY++;
+
+					//end of row, move down to next row in sheet
+
+					if (frameY > frameYMax) {
+						frameY = 0;
+					}
+				}
+				frame++;
+
+				//resets frames to 0 in event that there are empty spaces on sprite sheet
+
+				if (frame > frameMax) {
+					frame = 0;
+					frameX = 0;
+					frameY = 0;
+				}
+			}
+		}
+
+		function colCheck(shapeA, shapeB) {
+			// get the vectors to check against
+			var vX = (shapeA.x + (shapeA.width / 2)) - (shapeB.x + (shapeB.width / 2)),
+				vY = (shapeA.y + (shapeA.height / 2)) - (shapeB.y + (shapeB.height / 2)),
+				// add the half widths and half heights of the objects
+				hWidths = (shapeA.width / 2) + (shapeB.width / 2),
+				hHeights = (shapeA.height / 2) + (shapeB.height / 2),
+				colDir = null;
+
+			// if the x and y vector are less than the half width or half height, they we must be inside the object, causing a collision
+			if (Math.abs(vX) < hWidths && Math.abs(vY) < hHeights) {
+				// figures out on which side we are colliding (top, bottom, left, or right)
+				var oX = hWidths - Math.abs(vX),
+					oY = hHeights - Math.abs(vY);
+				if (oX >= oY) {
+					if (vY > 0) {
+						colDir = "t";
+						shapeA.y += oY;
+					} else {
+						colDir = "b";
+						shapeA.y -= oY;
+
+					}
+				} else {
+					if (vX > 0) {
+						colDir = "l";
+						shapeA.x += oX;
+					} else {
+						colDir = "r";
+						shapeA.x -= oX;
+
+					}
+				}
+			}
+			return colDir;
+		}
+
+		function drawScore() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#ffffff";
+			ctx.fillText(score, 82, 28);
+		}
+
+		function drawEnergy() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#ffffff";
+			ctx.fillText(Math.round(energy) + "%", 255, 28);
+		}
+
+		function drawHealth() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#ffffff";
+			ctx.fillText(health, 415, 28);
+		}
+
+		//function for making use of audio
+		function sound(src) {
+			this.sound = document.createElement("audio");
+			this.sound.src = src;
+			this.sound.setAttribute("preload", "auto");
+			this.sound.setAttribute("controls", "none");
+			this.sound.style.display = "none";
+			document.body.appendChild(this.sound);
+			this.play = function() {
+				this.sound.play();
+			}
+			this.stop = function() {
+				this.sound.pause();
+			}
+		}
+	</script>
+</body>
+
+</html>
